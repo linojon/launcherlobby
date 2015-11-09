@@ -13,6 +13,8 @@ import com.google.vrtoolkit.cardboard.Viewport;
 import javax.microedition.khronos.egl.EGLConfig;
 
 public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer {
+    private CardboardOverlayView overlayView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,6 +24,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         cardboardView.setRestoreGLStateEnabled(false);
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
+
+        overlayView = (CardboardOverlayView) findViewById(R.id.overlay);
+        //overlayView.show3DToast("Hello Virtual World");
     }
 
     @Override
