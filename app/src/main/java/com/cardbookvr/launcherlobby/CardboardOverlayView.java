@@ -11,22 +11,50 @@ import android.widget.TextView;
 
 
 public class CardboardOverlayView extends LinearLayout{
+    private final CardboardOverlayEyeView leftView;
+    private final CardboardOverlayEyeView rightView;
 
     public CardboardOverlayView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setOrientation(HORIZONTAL);
         setVisibility(View.VISIBLE);
 
-        CardboardOverlayEyeView textView = new CardboardOverlayEyeView(context, attrs);
-        addView(textView);
+        LayoutParams params = new LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, 1.0f);
+        params.setMargins(0, 0, 0, 0);
 
-        textView.setColor(Color.rgb(150, 255, 180));
-        textView.setText("Hello Virtual World!");
+        leftView = new CardboardOverlayEyeView(context, attrs);
+        leftView.setLayoutParams(params);
+        addView(leftView);
+
+        rightView = new CardboardOverlayEyeView(context, attrs);
+        rightView.setLayoutParams(params);
+        addView(rightView);
+
+        setDepthOffset(0.01f);
+        setColor(Color.rgb(150, 255, 180));
+
+        setText("Hello Virtual World!");
     }
 
+    private void setDepthOffset(float offset) {
+        leftView.setOffset(offset);
+        rightView.setOffset(-offset);
+    }
+
+    private void setColor(int color) {
+        leftView.setColor(color);
+        rightView.setColor(color);
+    }
+
+    private void setText(String text) {
+        leftView.setText(text);
+        rightView.setText(text);
+    }
 
     private class CardboardOverlayEyeView extends ViewGroup {
         private final TextView textView;
+        private float offset;
 
         public CardboardOverlayEyeView(Context context, AttributeSet attrs) {
             super(context, attrs);
@@ -44,6 +72,10 @@ public class CardboardOverlayView extends LinearLayout{
             textView.setText(text);
         }
 
+        public void setOffset(float offset) {
+            this.offset = offset;
+        }
+
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             // Width and height of this ViewGroup
@@ -55,9 +87,10 @@ public class CardboardOverlayView extends LinearLayout{
 
             // Layout TextView
             float topMargin = height * verticalTextPos;
+            float leftMargin = offset * width;
             textView.layout(
-                    0, (int) topMargin,
-                    width, (int) (topMargin + height * (1.0f - verticalTextPos))
+                    (int) leftMargin, (int) topMargin,
+                    (int) (leftMargin + width), (int) (topMargin + height * (1.0f - verticalTextPos))
             );
         }
     }
