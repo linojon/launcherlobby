@@ -6,6 +6,8 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -13,6 +15,7 @@ import android.widget.TextView;
 public class CardboardOverlayView extends LinearLayout{
     private final CardboardOverlayEyeView leftView;
     private final CardboardOverlayEyeView rightView;
+    private AlphaAnimation textFadeAnimation;
 
     public CardboardOverlayView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -34,7 +37,25 @@ public class CardboardOverlayView extends LinearLayout{
         setDepthOffset(0.01f);
         setColor(Color.rgb(150, 255, 180));
 
-        setText("Hello Virtual World!");
+        textFadeAnimation = new AlphaAnimation(1.0f, 0.0f);
+        textFadeAnimation.setDuration(5000);
+    }
+
+    public void show3DToast(String message) {
+        setText(message);
+        setTextAlpha(1f);
+        textFadeAnimation.setAnimationListener(new EndAnimationListener() {
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                setTextAlpha(0f);
+            }
+        });
+        startAnimation(textFadeAnimation);
+    }
+
+    private abstract class EndAnimationListener implements Animation.AnimationListener {
+        @Override public void onAnimationRepeat(Animation animation) {}
+        @Override public void onAnimationStart(Animation animation) {}
     }
 
     private void setDepthOffset(float offset) {
@@ -45,6 +66,11 @@ public class CardboardOverlayView extends LinearLayout{
     private void setColor(int color) {
         leftView.setColor(color);
         rightView.setColor(color);
+    }
+
+    private void setTextAlpha(float alpha) {
+        leftView.setTextViewAlpha(alpha);
+        rightView.setTextViewAlpha(alpha);
     }
 
     private void setText(String text) {
@@ -64,8 +90,17 @@ public class CardboardOverlayView extends LinearLayout{
             addView(textView);
         }
 
+        private void setTextAlpha(float alpha) {
+            leftView.setTextViewAlpha(alpha);
+            rightView.setTextViewAlpha(alpha);
+        }
+
         public void setColor(int color) {
             textView.setTextColor(color);
+        }
+
+        public void setTextViewAlpha(float alpha) {
+            textView.setAlpha(alpha);
         }
 
         public void setText(String text) {
