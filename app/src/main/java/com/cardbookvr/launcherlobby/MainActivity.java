@@ -31,7 +31,15 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onNewFrame(HeadTransform headTransform) {
-
+        final float[] angles = new float[3];
+        headTransform.getEulerAngles(angles, 0);
+        //NOTE: This is the messy part, and why it might be better to avoid the Cardboard SDK altogether and just use deviceOrientation in a normal split-view activity
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                overlayView.setHeadOffset(angles[1]);
+            }
+        });
     }
 
     @Override

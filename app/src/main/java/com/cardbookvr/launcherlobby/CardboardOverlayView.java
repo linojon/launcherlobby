@@ -6,16 +6,15 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
 public class CardboardOverlayView extends LinearLayout{
-    private final CardboardOverlayEyeView leftView;
-    private final CardboardOverlayEyeView rightView;
-    private AlphaAnimation textFadeAnimation;
+    private final OverlayEyeView leftView;
+    private final OverlayEyeView rightView;
+//    private AlphaAnimation textFadeAnimation;
 
     public CardboardOverlayView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -26,32 +25,54 @@ public class CardboardOverlayView extends LinearLayout{
                 LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, 1.0f);
         params.setMargins(0, 0, 0, 0);
 
-        leftView = new CardboardOverlayEyeView(context, attrs);
+        leftView = new OverlayEyeView(context, attrs);
         leftView.setLayoutParams(params);
         addView(leftView);
 
-        rightView = new CardboardOverlayEyeView(context, attrs);
+        rightView = new OverlayEyeView(context, attrs);
         rightView.setLayoutParams(params);
         addView(rightView);
 
         setDepthOffset(0.01f);
         setColor(Color.rgb(150, 255, 180));
 
-        textFadeAnimation = new AlphaAnimation(1.0f, 0.0f);
-        textFadeAnimation.setDuration(5000);
+//        textFadeAnimation = new AlphaAnimation(1.0f, 0.0f);
+//        textFadeAnimation.setDuration(5000);
     }
 
     public void show3DToast(String message) {
         setText(message);
-        setTextAlpha(1f);
-        textFadeAnimation.setAnimationListener(new EndAnimationListener() {
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                setTextAlpha(0f);
-            }
-        });
-        startAnimation(textFadeAnimation);
+//        setTextAlpha(1f);
+//        textFadeAnimation.setAnimationListener(new EndAnimationListener() {
+//            @Override
+//            public void onAnimationEnd(Animation animation) {
+//                setTextAlpha(0f);
+//            }
+//        });
+//        startAnimation(textFadeAnimation);
     }
+
+    float lastHeadOffset = 0;
+    float headOrigin = 0;
+    public void setHeadOffset(float headOffset){
+
+        float dHeadOffset = headOffset - lastHeadOffset;
+        if(dHeadOffset > Math.PI - 1){  //1 is some number which is greater than a reaonable delta and smaller than pi
+            dHeadOffset -= Math.PI + Math.PI;
+        }
+        if(dHeadOffset < -Math.PI - 1){
+            dHeadOffset += Math.PI + Math.PI;
+        }
+        headOrigin += dHeadOffset;
+
+        if(headOrigin > 0.5)      //Don't let them scroll into nothing
+            headOrigin = 0.5f;
+
+        leftView.setHeadOffset(headOrigin);
+        rightView.setHeadOffset(headOrigin);
+        lastHeadOffset = headOffset;
+    }
+
 
     private abstract class EndAnimationListener implements Animation.AnimationListener {
         @Override public void onAnimationRepeat(Animation animation) {}
@@ -78,21 +99,16 @@ public class CardboardOverlayView extends LinearLayout{
         rightView.setText(text);
     }
 
-    private class CardboardOverlayEyeView extends ViewGroup {
+    private class OverlayEyeView extends ViewGroup {
         private final TextView textView;
         private float offset;
 
-        public CardboardOverlayEyeView(Context context, AttributeSet attrs) {
+        public OverlayEyeView(Context context, AttributeSet attrs) {
             super(context, attrs);
 
             textView = new TextView(context, attrs);
             textView.setGravity(Gravity.CENTER);
             addView(textView);
-        }
-
-        private void setTextAlpha(float alpha) {
-            leftView.setTextViewAlpha(alpha);
-            rightView.setTextViewAlpha(alpha);
         }
 
         public void setColor(int color) {
@@ -127,6 +143,10 @@ public class CardboardOverlayView extends LinearLayout{
                     (int) leftMargin, (int) topMargin,
                     (int) (leftMargin + width), (int) (topMargin + height * (1.0f - verticalTextPos))
             );
+        }
+
+        public void setHeadOffset(float headOffset) {
+            textView.setX(headOffset * 1000);
         }
     }
 
