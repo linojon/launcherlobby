@@ -2,19 +2,25 @@ package com.cardbookvr.launcherlobby;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
-import android.view.Gravity;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class CardboardOverlayView extends LinearLayout{
     private final OverlayEyeView leftView;
     private final OverlayEyeView rightView;
-//    private AlphaAnimation textFadeAnimation;
+
+    List<Shortcut> shortcuts = new ArrayList<Shortcut>();
 
     public CardboardOverlayView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -33,23 +39,8 @@ public class CardboardOverlayView extends LinearLayout{
         rightView.setLayoutParams(params);
         addView(rightView);
 
-        setDepthOffset(0.01f);
+        setDepthOffset(0.1f);
         setColor(Color.rgb(150, 255, 180));
-
-//        textFadeAnimation = new AlphaAnimation(1.0f, 0.0f);
-//        textFadeAnimation.setDuration(5000);
-    }
-
-    public void show3DToast(String message) {
-        setText(message);
-//        setTextAlpha(1f);
-//        textFadeAnimation.setAnimationListener(new EndAnimationListener() {
-//            @Override
-//            public void onAnimationEnd(Animation animation) {
-//                setTextAlpha(0f);
-//            }
-//        });
-//        startAnimation(textFadeAnimation);
     }
 
     float lastHeadOffset = 0;
@@ -73,59 +64,81 @@ public class CardboardOverlayView extends LinearLayout{
         lastHeadOffset = headOffset;
     }
 
-
-    private abstract class EndAnimationListener implements Animation.AnimationListener {
-        @Override public void onAnimationRepeat(Animation animation) {}
-        @Override public void onAnimationStart(Animation animation) {}
-    }
-
-    private void setDepthOffset(float offset) {
+    public void setDepthOffset(float offset) {
         leftView.setOffset(offset);
         rightView.setOffset(-offset);
     }
 
-    private void setColor(int color) {
+    public void setColor(int color) {
         leftView.setColor(color);
         rightView.setColor(color);
     }
 
-    private void setTextAlpha(float alpha) {
-        leftView.setTextViewAlpha(alpha);
-        rightView.setTextViewAlpha(alpha);
+    public void addShortcut(Shortcut shortcut){
+        shortcuts.add(shortcut);
+        leftView.addShortcut(shortcut);
+        rightView.addShortcut(shortcut);
     }
 
-    private void setText(String text) {
-        leftView.setText(text);
-        rightView.setText(text);
-    }
-
+    ///////////////////////////////////////////////
     private class OverlayEyeView extends ViewGroup {
-        private final TextView textView;
+        private final List<TextView> textViews = new ArrayList<TextView>();
+        private final List<ImageView> imageViews = new ArrayList<ImageView>();
         private float offset;
+        private int color;
+
+//        CardboardOverlayView owner;
+        private Context context;
+        private AttributeSet attrs;
 
         public OverlayEyeView(Context context, AttributeSet attrs) {
             super(context, attrs);
-
-            textView = new TextView(context, attrs);
-            textView.setGravity(Gravity.CENTER);
-            addView(textView);
+            this.context = context;
+            this.attrs = attrs;
         }
+
+        public void addShortcut(Shortcut shortcut){
+            ImageView imageView = new ImageView(context, attrs);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            imageView.setAdjustViewBounds(true);  // Preserve aspect ratio.
+            imageView.setImageDrawable(shortcut.icon);
+            addView(imageView);
+            imageViews.add(imageView);
+
+            TextView textView = new TextView(context, attrs);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.0f);
+            textView.setTypeface(textView.getTypeface(), Typeface.BOLD);
+//            textView.setGravity(Gravity.CENTER);
+            textView.setTextColor(Color.WHITE);
+            textView.setText(shortcut.name);
+            addView(textView);
+            textViews.add(textView);
+        }
+
 
         public void setColor(int color) {
-            textView.setTextColor(color);
-        }
-
-        public void setTextViewAlpha(float alpha) {
-            textView.setAlpha(alpha);
-        }
-
-        public void setText(String text) {
-            textView.setText(text);
+           this.color = color;
         }
 
         public void setOffset(float offset) {
             this.offset = offset;
         }
+
+        public void setHeadOffset(float headOffset){
+            //Log.d(TAG, textInitX + ", " + headOffset);
+            int count = 0;
+            for(TextView textView : textViews) {
+                textView.setX(headOffset * 1000 + count * 500 + offset);
+                count++;
+            }
+            count = 0;
+            for(ImageView imageView : imageViews) {
+                imageView.setX(headOffset * 1000 + count * 500 + 20 + offset);
+                count++;
+            }
+        }
+
+        float leftMargin = 0;
 
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -133,20 +146,46 @@ public class CardboardOverlayView extends LinearLayout{
             final int width = right - left;
             final int height = bottom - top;
 
-            // Vertical position of the text, in fractions of this ViewGroup's height
+            // Vertical position of the text, specified in fractions of this ViewGroup's height.
             final float verticalTextPos = 0.52f;
-
             // Layout TextView
             float topMargin = height * verticalTextPos;
-            float leftMargin = offset * width;
-            textView.layout(
-                    (int) leftMargin, (int) topMargin,
-                    (int) (leftMargin + width), (int) (topMargin + height * (1.0f - verticalTextPos))
-            );
-        }
+             leftMargin = offset * width;
+            for(TextView textView : textViews) {
+                textView.layout(
+                        (int) leftMargin, (int) topMargin,
+                        (int) (leftMargin + width), (int) (topMargin + height * (1.0f - verticalTextPos))
+                );
+            }
 
-        public void setHeadOffset(float headOffset) {
-            textView.setX(headOffset * 1000);
+            // The size of the image, given as a fraction of the dimension as a ViewGroup.
+            // We multiply both width and heading with this number to compute the image's bounding
+            // box. Inside the box, the image is the horizontally and vertically centered.
+            final float imageSize = 0.2f;
+
+            // The fraction of this ViewGroup's height by which we shift the image off the
+            // ViewGroup's center. Positive values shift downwards, negative values shift upwards.
+            final float verticalImageOffset = -0.07f;
+
+            // Layout ImageView
+            float adjustedOffset = offset;// + owner.headOffset;
+            // If the half screen width is bigger than 1000 pixels, that means it's a big screen
+            // phone and we need to use a different offset value.
+            if (width > 1000) {
+                adjustedOffset = 3.8f * offset;
+            }
+            //Log.d("onLayout", "adjoffset " + adjustedOffset);
+            float imageMargin = (1.0f - imageSize) / 2.0f;
+             leftMargin = (int) (width * (imageMargin + adjustedOffset));
+             topMargin = (int) (height * (imageMargin + verticalImageOffset));
+            Log.d("onLayout", "width, leftMargin " + width + ", " + leftMargin);
+            for(ImageView imageView : imageViews) {
+                imageView.layout(
+                        (int) leftMargin, (int) topMargin,
+                        (int) (leftMargin + width * imageSize), (int) (topMargin + height * imageSize));
+
+                imageView.offsetLeftAndRight((int) (-leftMargin));
+            }
         }
     }
 

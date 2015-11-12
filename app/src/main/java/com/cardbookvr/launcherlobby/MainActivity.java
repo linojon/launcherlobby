@@ -1,5 +1,8 @@
 package com.cardbookvr.launcherlobby;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,9 +13,12 @@ import com.google.vrtoolkit.cardboard.Eye;
 import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
 
+import java.util.List;
+
 import javax.microedition.khronos.egl.EGLConfig;
 
 public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer {
+    private static final String TAG = "LauncherLobby";
     private CardboardOverlayView overlayView;
 
     @Override
@@ -26,7 +32,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         setCardboardView(cardboardView);
 
         overlayView = (CardboardOverlayView) findViewById(R.id.overlay);
-        overlayView.show3DToast("Hello Virtual World");
+        //overlayView.setText("Hello Virtual World");
+        //overlayView.show3DToast("Test text that is really long and should wrap around the view for a while so we can see in 360 degrees");
+        getAppList();
     }
 
     @Override
@@ -87,5 +95,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void getAppList() {
+        final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+        mainIntent.addCategory("com.google.intent.category.CARDBOARD");
+        mainIntent.addFlags(PackageManager.GET_INTENT_FILTERS);
+        final List<ResolveInfo> pkgAppsList = getPackageManager().queryIntentActivities( mainIntent, PackageManager.GET_INTENT_FILTERS);
+        for (ResolveInfo info : pkgAppsList) {
+            //Log.d("getAppList", info.loadLabel(getPackageManager()).toString());
+            overlayView.addShortcut( new Shortcut(info, getPackageManager()));
+        }
     }
 }
